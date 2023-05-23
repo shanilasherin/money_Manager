@@ -1,0 +1,80 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:intl/intl.dart';
+import 'package:money_manager/db/category/category_db.dart';
+import 'package:money_manager/db/transaction/transaction_db.dart';
+import 'package:money_manager/models/category/category_model.dart';
+import 'package:money_manager/models/transaction/transaction_model.dart';
+
+class TransactionPage extends StatefulWidget {
+  const TransactionPage({Key? key}) : super(key: key);
+
+  @override
+  State<TransactionPage> createState() => _TransactionPageState();
+}
+
+class _TransactionPageState extends State<TransactionPage> {
+  @override
+  void initState() {
+    CategoryDB().refreshCategoryUI();
+    TransactionDB.instance.refreshTransactionUI();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // return const Center(child: Text('transaction'));
+    return ValueListenableBuilder(
+        valueListenable: TransactionDB.instance.transactionListNotifier,
+        builder: (BuildContext ctx, List<TransactionModel> newList, Widget? _) {
+          return ListView.separated(
+              padding: const EdgeInsets.all(18),
+              itemBuilder: (ctx, index) {
+                final _data = newList[index];
+                return Slidable(
+                  
+                  key: Key(_data.id!),
+                  startActionPane: ActionPane(
+                    motion: const ScrollMotion(),
+                    children: [
+                      SlidableAction(onPressed: (ctx){
+                        TransactionDB.instance.deleteTransaction(_data.id!);
+                      }, icon: Icons.delete,label: 'Delete',)
+                    ],
+                  ),
+
+
+                  child: Card(
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _data.type == CategoryType.income
+                            ? Colors.green
+                            : Colors.red,
+                        radius: 75,
+                        child: Text(
+                          parseDate(_data.datetime),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      title: Text('Rs. ${_data.amount}'),
+                      subtitle: Text(_data.category.categoryName),
+                    ),
+                  ),
+                );
+              },
+              separatorBuilder: (ctx, index) => const SizedBox(
+                    height: 10,
+                  ),
+              itemCount: newList.length);
+        });
+  }
+
+  String parseDate(DateTime date) {
+    final _date = DateFormat.MMMd().format(date);
+    final _splitedDate = _date.split(' '); //array with elements split by ' '
+    return '${_splitedDate.last}\n${_splitedDate.first}';
+
+    // return DateFormat.MMMd().format(date);
+    // return '${date.day}\n${date.month}';
+  }
+}
